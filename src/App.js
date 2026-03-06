@@ -358,8 +358,6 @@ function AdminSales({ sellers, sales }) {
   const [filterSeller, setFilterSeller] = useState("ALL");
 
   const confirmed = sales.filter(s=>s.status==="confirmed");
-  const presented = sales.filter(s=>s.status==="presented");
-  const convRate   = sales.length ? Math.round((confirmed.length/sales.length)*100) : 0;
   const filtered   = confirmed.filter(s=>filterSeller==="ALL"||s.sellerName===filterSeller);
 
   const sellerStats = sellers.map((s,i)=>{

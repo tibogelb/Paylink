@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL  = "https://ksmzyhghnnkctvgknlxt.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzbXp5aGdobm5rY3R2Z2tubHh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4Mjk5NDYsImV4cCI6MjA4ODQwNTk0Nn0.5Ig6p3vhNJjloHJrIJRJGlTYX3-1EqqsD2_34BQ55Pg";

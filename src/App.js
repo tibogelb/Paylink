@@ -218,6 +218,16 @@ function AdminOffers({ offers, setOffers }) {
   const [confirmDel, setConfirmDel] = useState(null);
 
   const filtered = filterCat==="ALL" ? offers : offers.filter(o=>o.category===filterCat);
+
+  function moveOffer(id, dir) {
+    const idx = offers.findIndex(o=>o.id===id);
+    if (idx===-1) return;
+    const newOffers = [...offers];
+    const swapIdx = idx + dir;
+    if (swapIdx < 0 || swapIdx >= newOffers.length) return;
+    [newOffers[idx], newOffers[swapIdx]] = [newOffers[swapIdx], newOffers[idx]];
+    setOffers(newOffers); save(KEY_OFFERS, newOffers);
+  }
   const counts = { PRO:offers.filter(o=>o.category==="PRO").length, Joueur:offers.filter(o=>o.category==="Joueur").length };
   const previewGames = extractNbGames(form.label);
 
@@ -317,10 +327,16 @@ function AdminOffers({ offers, setOffers }) {
       )}
 
       <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
-        {filtered.map(offer=>{
+        {filtered.map((offer, filteredIdx)=>{
           const c=CAT_COLORS[offer.category], cb=CAT_COLORS2[offer.category], ng=extractNbGames(offer.label);
+          const globalIdx = offers.findIndex(o=>o.id===offer.id);
           return (
             <div key={offer.id} style={{ background:T.surface, borderRadius:12, padding:"13px 16px", border:`1px solid ${T.border}`, display:"flex", gap:12, alignItems:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
+              {/* Boutons ordre */}
+              <div style={{ display:"flex", flexDirection:"column", gap:3, flexShrink:0 }}>
+                <button onClick={()=>moveOffer(offer.id,-1)} disabled={globalIdx===0} style={{ background:"none", border:"none", cursor:globalIdx===0?"default":"pointer", color:globalIdx===0?T.border:T.muted, fontSize:13, padding:"1px 4px", lineHeight:1 }}>▲</button>
+                <button onClick={()=>moveOffer(offer.id,+1)} disabled={globalIdx===offers.length-1} style={{ background:"none", border:"none", cursor:globalIdx===offers.length-1?"default":"pointer", color:globalIdx===offers.length-1?T.border:T.muted, fontSize:13, padding:"1px 4px", lineHeight:1 }}>▼</button>
+              </div>
               <div style={{ padding:"3px 9px", borderRadius:6, background:cb, color:c, fontSize:10, fontWeight:800, fontFamily:"'Syne',sans-serif", letterSpacing:0.5, flexShrink:0 }}>{offer.category}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, color:T.text, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{offer.label}</div>
@@ -459,8 +475,7 @@ function SalesView({ offers, seller, sales, setSales }) {
 
   const color  = CAT_COLORS[category];
   const colorB = CAT_COLORS2[category];
-  const filtered = offers.filter(o=>o.category===category&&(!search||o.label.toLowerCase().includes(search.toLowerCase())));
-  const counts = { PRO:offers.filter(o=>o.category==="PRO").length, Joueur:offers.filter(o=>o.category==="Joueur").length };
+  const filtered = offers.filter(o=>o.category===category&&(!search||o.label.toLowerCase().includes(search.toLowerCase())));  const counts = { PRO:offers.filter(o=>o.category==="PRO").length, Joueur:offers.filter(o=>o.category==="Joueur").length };
 
   function presentOffer(offer) {
     setSelected(offer); setSaleId(null); setConfirmed(false); setClientName(""); setComment("");

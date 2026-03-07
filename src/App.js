@@ -620,6 +620,81 @@ function SalesView({ offers, seller }) {
         })}
         {filtered.length===0 && <div style={{ textAlign:"center", color:T.muted, padding:40, fontFamily:"'Syne',sans-serif" }}>Aucune offre</div>}
       </div>
+      <MolliePayments/>
+    </div>
+  );
+}
+
+// ── Mollie Payments ───────────────────────────────────────────────────────────
+function MolliePayments() {
+  const [payments,setPayments]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState(null);
+  const [refreshed,setRefreshed]=useState(false);
+
+  async function load() {
+    setLoading(true); setError(null);
+    try {
+      const r=await fetch("/api/mollie");
+      const d=await r.json();
+      if (d._embedded&&d._embedded.payments) setPayments(d._embedded.payments.slice(0,5));
+      else setError("Impossible de charger les paiements");
+    } catch(e) { setError("Erreur de connexion"); }
+    setLoading(false);
+  }
+
+  useEffect(()=>{ load(); },[]);
+
+  function refresh() { setRefreshed(true); setTimeout(()=>setRefreshed(false),1000); load(); }
+
+  const statusInfo = {
+    paid:     { label:"Payé",      bg:"#D1FAE5", color:"#065F46", icon:"✅" },
+    pending:  { label:"En attente",bg:"#FEF9C3", color:"#713F12", icon:"⏳" },
+    open:     { label:"Ouvert",    bg:"#DBEAFE", color:"#1E40AF", icon:"🔵" },
+    failed:   { label:"Échoué",    bg:"#FEF2F2", color:"#991B1B", icon:"❌" },
+    expired:  { label:"Expiré",    bg:"#F3F4F6", color:"#6B7280", icon:"⏱" },
+    canceled: { label:"Annulé",    bg:"#FEF2F2", color:"#991B1B", icon:"🚫" },
+  };
+
+  return (
+    <div style={{ marginTop:28, paddingTop:20, borderTop:`1px solid ${T.border}` }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+        <div>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:900, fontSize:16, color:T.text }}>💳 Derniers paiements Mollie</div>
+          <div style={{ color:T.muted, fontSize:11, marginTop:2 }}>5 transactions les plus récentes</div>
+        </div>
+        <button onClick={refresh} style={{ background:refreshed?"#D1FAE5":T.surface, border:`1px solid ${T.border}`, borderRadius:8, padding:"6px 12px", color:refreshed?"#059669":T.sub, fontSize:12, cursor:"pointer", fontFamily:"'Syne',sans-serif", fontWeight:600, transition:"all 0.2s" }}>
+          {refreshed?"✓":"↻"} Actualiser
+        </button>
+      </div>
+      {loading && <div style={{ textAlign:"center", color:T.muted, padding:24, fontFamily:"'Syne',sans-serif", fontSize:13 }}>Chargement…</div>}
+      {error   && <div style={{ textAlign:"center", color:"#EF4444", padding:16, fontFamily:"'Syne',sans-serif", fontSize:13, background:"#FEF2F2", borderRadius:10, border:"1px solid #FECACA" }}>{error}</div>}
+      {!loading&&!error&&(
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {payments.map(p=>{
+            const st=statusInfo[p.status]||{ label:p.status, bg:T.bg, color:T.sub, icon:"•" };
+            const dt=new Date(p.createdAt);
+            const dateStr=dt.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"})+
+              " "+dt.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+            return (
+              <div key={p.id} style={{ background:T.surface, borderRadius:10, padding:"12px 14px", border:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+                <div style={{ fontSize:20, flexShrink:0 }}>{st.icon}</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, color:T.text, fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {p.description||"Paiement"}
+                  </div>
+                  <div style={{ color:T.muted, fontSize:11, marginTop:2 }}>{dateStr}</div>
+                </div>
+                <div style={{ padding:"3px 10px", borderRadius:20, background:st.bg, color:st.color, fontSize:11, fontWeight:700, fontFamily:"'Syne',sans-serif", flexShrink:0 }}>{st.label}</div>
+                <div style={{ color:CAT_COLORS.PRO, fontWeight:900, fontFamily:"'Syne',sans-serif", fontSize:15, flexShrink:0 }}>
+                  {p.amount?Number(p.amount.value).toFixed(2).replace(".",",")+" €":"–"}
+                </div>
+              </div>
+            );
+          })}
+          {payments.length===0&&<div style={{ textAlign:"center", color:T.muted, padding:24, fontFamily:"'Syne',sans-serif", fontSize:13 }}>Aucun paiement trouvé</div>}
+        </div>
+      )}
     </div>
   );
 }

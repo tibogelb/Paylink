@@ -637,7 +637,7 @@ function MolliePayments() {
     try {
       const r=await fetch("/api/mollie");
       const d=await r.json();
-      if (d._embedded&&d._embedded.payments) setPayments(d._embedded.payments.slice(0,5));
+      if (d._embedded&&d._embedded.payments) setPayments(d._embedded.payments.filter(p=>p.status!=="expired").slice(0,10));
       else setError("Impossible de charger les paiements");
     } catch(e) { setError("Erreur de connexion"); }
     setLoading(false);
@@ -648,12 +648,18 @@ function MolliePayments() {
   function refresh() { setRefreshed(true); setTimeout(()=>setRefreshed(false),1000); load(); }
 
   const statusInfo = {
-    paid:     { label:"Payé",      bg:"#D1FAE5", color:"#065F46", icon:"✅" },
-    pending:  { label:"En attente",bg:"#FEF9C3", color:"#713F12", icon:"⏳" },
-    open:     { label:"Ouvert",    bg:"#DBEAFE", color:"#1E40AF", icon:"🔵" },
-    failed:   { label:"Échoué",    bg:"#FEF2F2", color:"#991B1B", icon:"❌" },
-    expired:  { label:"Expiré",    bg:"#F3F4F6", color:"#6B7280", icon:"⏱" },
-    canceled: { label:"Annulé",    bg:"#FEF2F2", color:"#991B1B", icon:"🚫" },
+    paid:        { label:"Payé",        bg:"#D1FAE5", color:"#065F46", icon:"✅" },
+    authorized:  { label:"Autorisé",    bg:"#D1FAE5", color:"#065F46", icon:"✅" },
+    settled:     { label:"Réglé",       bg:"#D1FAE5", color:"#065F46", icon:"✅" },
+    pending:     { label:"En attente",  bg:"#FEF9C3", color:"#713F12", icon:"⏳" },
+    open:        { label:"Ouvert",      bg:"#DBEAFE", color:"#1E40AF", icon:"🔵" },
+    "in-progress":{ label:"En cours",  bg:"#DBEAFE", color:"#1E40AF", icon:"🔵" },
+    failed:      { label:"Échoué",      bg:"#FEF2F2", color:"#991B1B", icon:"❌" },
+    canceled:    { label:"Annulé",      bg:"#FEF2F2", color:"#991B1B", icon:"🚫" },
+    blocked:     { label:"Bloqué",      bg:"#FEF2F2", color:"#991B1B", icon:"🔒" },
+    chargeback:  { label:"Rétrofacturé",bg:"#FEF2F2", color:"#991B1B", icon:"↩️" },
+    refunded:    { label:"Remboursé",   bg:"#FFEDD5", color:"#9A3412", icon:"↩️" },
+    "partially-refunded":{ label:"Part. remboursé", bg:"#FFEDD5", color:"#9A3412", icon:"↩️" },
   };
 
   return (
@@ -661,7 +667,7 @@ function MolliePayments() {
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
         <div>
           <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:900, fontSize:16, color:T.text }}>💳 Derniers paiements Mollie</div>
-          <div style={{ color:T.muted, fontSize:11, marginTop:2 }}>5 transactions les plus récentes</div>
+          <div style={{ color:T.muted, fontSize:11, marginTop:2 }}>10 dernières transactions (hors expirées)</div>
         </div>
         <button onClick={refresh} style={{ background:refreshed?"#D1FAE5":T.surface, border:`1px solid ${T.border}`, borderRadius:8, padding:"6px 12px", color:refreshed?"#059669":T.sub, fontSize:12, cursor:"pointer", fontFamily:"'Syne',sans-serif", fontWeight:600, transition:"all 0.2s" }}>
           {refreshed?"✓":"↻"} Actualiser

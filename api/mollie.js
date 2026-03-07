@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    const response = await fetch("https://api.mollie.com/v2/payments?limit=5", {
+    const response = await fetch("https://api.mollie.com/v2/payments?limit=25", {
       headers: {
         Authorization: "Bearer live_jEKd3TMSAHBspMHBdSkrPhk67Tf4RR",
       },

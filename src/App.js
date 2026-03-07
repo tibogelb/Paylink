@@ -682,6 +682,10 @@ function MolliePayments() {
             const dt=new Date(p.createdAt);
             const dateStr=dt.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"})+
               " "+dt.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+            const consumerName = p.details?.consumerName || p.billingAddress?.givenName
+              ? `${p.billingAddress?.givenName||""} ${p.billingAddress?.familyName||""}`.trim()
+              : p.metadata?.consumer_name || null;
+            const orderRef = p.orderNumber || p.metadata?.order_id || null;
             return (
               <div key={p.id} style={{ background:T.surface, borderRadius:10, padding:"12px 14px", border:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
                 <div style={{ fontSize:20, flexShrink:0 }}>{st.icon}</div>
@@ -689,7 +693,11 @@ function MolliePayments() {
                   <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, color:T.text, fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                     {p.description||"Paiement"}
                   </div>
-                  <div style={{ color:T.muted, fontSize:11, marginTop:2 }}>{dateStr}</div>
+                  <div style={{ display:"flex", gap:8, marginTop:2, flexWrap:"wrap" }}>
+                    <span style={{ color:T.muted, fontSize:11 }}>{dateStr}</span>
+                    {consumerName && <span style={{ color:T.sub, fontSize:11, fontWeight:600 }}>👤 {consumerName}</span>}
+                    {orderRef     && <span style={{ color:T.muted, fontSize:11 }}>{orderRef}</span>}
+                  </div>
                 </div>
                 <div style={{ padding:"3px 10px", borderRadius:20, background:st.bg, color:st.color, fontSize:11, fontWeight:700, fontFamily:"'Syne',sans-serif", flexShrink:0 }}>{st.label}</div>
                 <div style={{ color:CAT_COLORS.PRO, fontWeight:900, fontFamily:"'Syne',sans-serif", fontSize:15, flexShrink:0 }}>

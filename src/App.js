@@ -196,16 +196,19 @@ function AdminOffers({ offers, reload }) {
   const counts = { PRO:offers.filter(o=>o.category==="PRO").length, Joueur:offers.filter(o=>o.category==="Joueur").length };
   const previewGames = extractNbGames(form.label);
 
-  function openNew()   { setEditingId(null); setForm({ label:"", price_ht:"", category:"PRO" }); setShowForm(true); }
-  function openEdit(o) { setEditingId(o.id); setForm({ label:o.label, price_ht:o.price_ht, category:o.category }); setShowForm(true); }
+  function openNew()   { setEditingId(null); setForm({ label:"", price_ht:"", price_ttc:"", category:"PRO", url:"" }); setShowForm(true); }
+  function openEdit(o) { setEditingId(o.id); setForm({ label:o.label, price_ht:o.price_ht, price_ttc:ttc(o.price_ht), category:o.category, url:o.url||"" }); setShowForm(true); }
 
   async function saveOffer() {
-    if (!form.label||!form.price_ht) return;
-    const ht=parseFloat(String(form.price_ht).replace(",","."));
+    if (!form.label||(!form.price_ht&&!form.price_ttc)) return;
+    const ht = form.price_ht
+      ? parseFloat(String(form.price_ht).replace(",","."))
+      : Math.round(parseFloat(String(form.price_ttc).replace(",","."))/1.2*100)/100;
     if (isNaN(ht)) return;
     setSaving(true);
-    if (editingId) await sb.from("offers").update({ label:form.label, price_ht:ht, category:form.category }).eq("id",editingId);
-    else await sb.from("offers").insert({ label:form.label, price_ht:ht, category:form.category, sort_order:offers.length });
+    const payload = { label:form.label, price_ht:ht, category:form.category, url:form.url||null };
+    if (editingId) await sb.from("offers").update(payload).eq("id",editingId);
+    else await sb.from("offers").insert({ ...payload, sort_order:offers.length });
     await reload(); setSaving(false); setShowForm(false);
   }
   async function doDelete(id) {
@@ -277,21 +280,30 @@ function AdminOffers({ offers, reload }) {
                 </div>
               )}
             </div>
-            <div style={{ marginBottom:22 }}>
-              <label style={{ color:T.sub, fontSize:11, display:"block", marginBottom:6, fontFamily:"'Syne',sans-serif", fontWeight:700, letterSpacing:1 }}>PRIX HT * (TVA 20% auto)</label>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ color:T.sub, fontSize:11, display:"block", marginBottom:6, fontFamily:"'Syne',sans-serif", fontWeight:700, letterSpacing:1 }}>PRIX (TVA 20% — remplissez HT ou TTC)</label>
               <div style={{ display:"flex", gap:8 }}>
                 <div style={{ flex:1, position:"relative" }}>
-                  <input value={form.price_ht} onChange={e=>setForm({...form,price_ht:e.target.value})} placeholder="9"
-                    style={{ ...inputStyle, paddingRight:44, fontWeight:700 }}/>
-                  <span style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", color:T.muted, fontSize:11 }}>€ HT</span>
+                  <input value={form.price_ht} onChange={e=>{
+                    const v=e.target.value;
+                    const n=parseFloat(String(v).replace(",","."));
+                    setForm({...form, price_ht:v, price_ttc:isNaN(n)?"":Math.round(n*1.2*100)/100});
+                  }} placeholder="Ex: 9,00" style={{ ...inputStyle, paddingRight:40, fontWeight:700 }}/>
+                  <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", color:T.muted, fontSize:10 }}>€ HT</span>
                 </div>
-                <div style={{ flex:1, background:"#D1FAE5", border:"1px solid #6EE7B7", borderRadius:10, padding:"11px 12px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <span style={{ color:"#065F46", fontSize:15, fontWeight:800, fontFamily:"'Syne',sans-serif" }}>
-                    {form.price_ht?fmtPrice(ttc(parseFloat(String(form.price_ht).replace(",","."))||0)):"– €"}
-                  </span>
-                  <span style={{ color:"#059669", fontSize:10 }}>TTC</span>
+                <div style={{ flex:1, position:"relative" }}>
+                  <input value={form.price_ttc} onChange={e=>{
+                    const v=e.target.value;
+                    const n=parseFloat(String(v).replace(",","."));
+                    setForm({...form, price_ttc:v, price_ht:isNaN(n)?"":Math.round(n/1.2*100)/100});
+                  }} placeholder="Ex: 10,80" style={{ ...inputStyle, paddingRight:44, fontWeight:700, background:"#D1FAE5", border:"1px solid #6EE7B7" }}/>
+                  <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", color:"#059669", fontSize:10 }}>€ TTC</span>
                 </div>
               </div>
+            </div>
+            <div style={{ marginBottom:22 }}>
+              <label style={{ color:T.sub, fontSize:11, display:"block", marginBottom:6, fontFamily:"'Syne',sans-serif", fontWeight:700, letterSpacing:1 }}>LIEN DE PAIEMENT (facultatif)</label>
+              <input value={form.url} onChange={e=>setForm({...form,url:e.target.value})} placeholder="https://..." style={inputStyle}/>
             </div>
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={()=>setShowForm(false)} style={{ flex:1, ...btnGhost }}>Annuler</button>
@@ -438,6 +450,25 @@ function AdminSales({ sellers }) {
   );
 }
 
+// ── Copy URL Button ───────────────────────────────────────────────────────────
+function CopyUrlButton({ url }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(url).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2000); });
+  }
+  return (
+    <div style={{ width:"100%", marginBottom:14 }}>
+      <div style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:12, padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
+        <span style={{ fontSize:16 }}>🔗</span>
+        <span style={{ flex:1, color:T.sub, fontSize:12, fontFamily:"'Syne',sans-serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{url}</span>
+        <button onClick={copy} style={{ background:copied?"#D1FAE5":"linear-gradient(135deg,#059669,#047857)", border:"none", borderRadius:8, padding:"7px 14px", color:copied?"#065F46":"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"'Syne',sans-serif", flexShrink:0, transition:"all 0.2s" }}>
+          {copied?"✓ Copié !":"📋 Copier"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Sales View ────────────────────────────────────────────────────────────────
 function SalesView({ offers, seller }) {
   const [category,setCategory]=useState("PRO");
@@ -519,6 +550,9 @@ function SalesView({ offers, seller }) {
             }
           </div>
           <p style={{ color:T.muted, fontSize:11, marginBottom:12, fontFamily:"'Syne',sans-serif" }}>Présentez ce QR à votre client · confirmez après paiement</p>
+          {selected.url && (
+            <CopyUrlButton url={selected.url}/>
+          )}
           <div style={{ width:"100%", marginBottom:12 }}>
             <input value={clientName} onChange={e=>setClientName(e.target.value)} placeholder="Prénom Nom du client (facultatif)" disabled={confirmed}
               style={{ ...inputStyle, marginBottom:8, opacity:confirmed?0.5:1 }}/>

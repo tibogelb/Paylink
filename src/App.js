@@ -68,10 +68,10 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
 // ── Nav bar ───────────────────────────────────────────────────────────────────
 function NavBar({ right, center }) {
   return (
-    <div style={{ background:T.nav, borderBottom:`1px solid ${T.border}`, padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:50, height:56, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+    <div style={{ background:"#FFE600", borderBottom:"none", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:50, height:56, boxShadow:"0 2px 8px rgba(0,0,0,0.12)" }}>
       <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-        <div style={{ width:28, height:28, borderRadius:8, background:"linear-gradient(135deg,#059669,#7C3AED)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>⚡</div>
-        <span style={{ fontWeight:900, fontSize:16, color:T.text, fontFamily:"'Syne',sans-serif" }}>PayLink</span>
+        <div style={{ width:28, height:28, borderRadius:8, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>⚡</div>
+        <span style={{ fontWeight:900, fontSize:16, color:"#1A1D2E", fontFamily:"'Syne',sans-serif" }}>PayLink Ditch!</span>
       </div>
       {center && <div>{center}</div>}
       <div>{right}</div>
@@ -84,8 +84,8 @@ function SellerPicker({ sellers, onSelect }) {
   return (
     <div style={{ minHeight:"100vh", background:T.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24, fontFamily:"'Syne',sans-serif" }}>
       <div style={{ marginBottom:36, textAlign:"center" }}>
-        <div style={{ width:60, height:60, borderRadius:18, background:"linear-gradient(135deg,#059669,#7C3AED)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, margin:"0 auto 16px", boxShadow:"0 8px 24px rgba(5,150,105,0.3)" }}>⚡</div>
-        <h1 style={{ color:T.text, fontSize:26, fontWeight:900, margin:"0 0 6px" }}>PayLink</h1>
+        <div style={{ width:60, height:60, borderRadius:18, background:"#FFE600", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, margin:"0 auto 16px", boxShadow:"0 8px 24px rgba(255,230,0,0.4)" }}>⚡</div>
+        <h1 style={{ color:T.text, fontSize:26, fontWeight:900, margin:"0 0 6px" }}>PayLink Ditch!</h1>
         <p style={{ color:T.sub, fontSize:14 }}>Qui êtes-vous ?</p>
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:12, width:"100%", maxWidth:360 }}>
@@ -360,11 +360,26 @@ function AdminSales({ sellers }) {
   const [sales,setSales]=useState([]);
   const [filterSeller,setFilterSeller]=useState("ALL");
   const [loading,setLoading]=useState(true);
+  const [editSale,setEditSale]=useState(null);
+  const [editForm,setEditForm]=useState({});
+  const [confirmDel,setConfirmDel]=useState(null);
 
-  useEffect(()=>{
-    sb.from("sales").select("*").eq("status","confirmed").order("confirmed_at",{ascending:false})
-      .then(({data})=>{ setSales(data||[]); setLoading(false); });
-  },[]);
+  async function loadSales() {
+    const {data}=await sb.from("sales").select("*").eq("status","confirmed").order("confirmed_at",{ascending:false});
+    setSales(data||[]); setLoading(false);
+  }
+  useEffect(()=>{ loadSales(); },[]);
+
+  async function doDelete(id) {
+    await sb.from("sales").delete().eq("id",id);
+    setConfirmDel(null); loadSales();
+  }
+  async function saveEdit() {
+    const nb=parseInt(editForm.nb_games)||1;
+    const price=parseFloat(String(editForm.price_ttc).replace(",","."));
+    await sb.from("sales").update({ nb_games:nb, price_ttc:isNaN(price)?editSale.price_ttc:price, client_name:editForm.client_name||null, comment:editForm.comment||null }).eq("id",editSale.id);
+    setEditSale(null); loadSales();
+  }
 
   const sellerStats=sellers.map((s,i)=>{
     const ss=sales.filter(x=>x.seller_name===s.name);
@@ -375,6 +390,36 @@ function AdminSales({ sellers }) {
 
   return (
     <div style={{ padding:"24px 20px", maxWidth:820, margin:"0 auto" }}>
+      {confirmDel && <ConfirmModal message="Supprimer cette vente ?" onConfirm={()=>doDelete(confirmDel)} onCancel={()=>setConfirmDel(null)}/>}
+
+      {editSale && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div style={{ background:T.surface, borderRadius:18, padding:28, width:"100%", maxWidth:400, border:`1px solid ${T.border}`, boxShadow:"0 20px 60px rgba(0,0,0,0.15)" }}>
+            <h3 style={{ fontFamily:"'Syne',sans-serif", color:T.text, margin:"0 0 18px", fontSize:17, fontWeight:800 }}>Modifier la vente</h3>
+            <div style={{ color:T.sub, fontSize:12, marginBottom:16, fontFamily:"'Syne',sans-serif" }}>{editSale.offer_label}</div>
+            <div style={{ marginBottom:12 }}>
+              <label style={{ color:T.sub, fontSize:11, display:"block", marginBottom:5, fontFamily:"'Syne',sans-serif", fontWeight:700 }}>NB JEUX</label>
+              <input type="number" min="1" value={editForm.nb_games} onChange={e=>setEditForm({...editForm,nb_games:e.target.value})} style={inputStyle}/>
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label style={{ color:T.sub, fontSize:11, display:"block", marginBottom:5, fontFamily:"'Syne',sans-serif", fontWeight:700 }}>MONTANT TTC</label>
+              <input value={editForm.price_ttc} onChange={e=>setEditForm({...editForm,price_ttc:e.target.value})} style={inputStyle}/>
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label style={{ color:T.sub, fontSize:11, display:"block", marginBottom:5, fontFamily:"'Syne',sans-serif", fontWeight:700 }}>CLIENT</label>
+              <input value={editForm.client_name||""} onChange={e=>setEditForm({...editForm,client_name:e.target.value})} style={inputStyle}/>
+            </div>
+            <div style={{ marginBottom:20 }}>
+              <label style={{ color:T.sub, fontSize:11, display:"block", marginBottom:5, fontFamily:"'Syne',sans-serif", fontWeight:700 }}>COMMENTAIRE</label>
+              <input value={editForm.comment||""} onChange={e=>setEditForm({...editForm,comment:e.target.value})} style={inputStyle}/>
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={()=>setEditSale(null)} style={{ flex:1, ...btnGhost }}>Annuler</button>
+              <button onClick={saveEdit} style={{ flex:2, ...btnPrimary }}>Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{ marginBottom:20 }}>
         <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:900, color:T.text, margin:"0 0 4px" }}>Tableau des ventes</h2>
         <p style={{ color:T.sub, fontSize:13, fontFamily:"'Syne',sans-serif" }}>{sales.length} vente{sales.length>1?"s":""} confirmée{sales.length>1?"s":""}</p>
@@ -403,7 +448,7 @@ function AdminSales({ sellers }) {
                   <div style={{ width:36, height:36, borderRadius:10, background:s.color+"18", border:`2px solid ${s.color}44`, display:"flex", alignItems:"center", justifyContent:"center", color:s.color, fontWeight:900, fontSize:14, flexShrink:0 }}>{medal&&s.count>0?medal:initials(s.name)}</div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, color:T.text, fontSize:15 }}>{s.name}</div>
-                    <div style={{ color:T.sub, fontSize:12, marginTop:2 }}>{s.count} vente{s.count>1?"s":""} · 🎮 {s.totalGames} jeu{s.totalGames>1?"x":""}</div>
+                    <div style={{ color:T.sub, fontSize:12, marginTop:2 }}>{s.count} vente{s.count>1?"s":""} · <svg width={12} height={12} viewBox="0 0 24 24" fill="none" style={{verticalAlign:"middle"}}><polygon points="12,2 22,7 12,12 2,7" fill="#FFE600" stroke="#C8B400" strokeWidth="1"/><polygon points="2,7 2,17 12,22 12,12" fill="#D4AC00" stroke="#C8B400" strokeWidth="1"/><polygon points="22,7 22,17 12,22 12,12" fill="#FFD000" stroke="#C8B400" strokeWidth="1"/></svg> {s.totalGames} jeu{s.totalGames>1?"x":""}</div>
                   </div>
                   <div style={{ textAlign:"right" }}>
                     <div style={{ color:s.count>0?s.color:T.muted, fontWeight:900, fontFamily:"'Syne',sans-serif", fontSize:18 }}>{fmtPrice(s.totalTTC)}</div>
@@ -438,8 +483,12 @@ function AdminSales({ sellers }) {
                   </div>
                 </div>
                 <div style={{ padding:"2px 8px", borderRadius:6, background:cb, color:c, fontSize:11, fontWeight:700, flexShrink:0 }}>{s.category}</div>
-                <div style={{ color:"#7C3AED", fontSize:12, fontWeight:600, flexShrink:0 }}>🎮 ×{s.nb_games}</div>
+                <div style={{ color:"#7C3AED", fontSize:12, fontWeight:600, flexShrink:0, display:"flex", alignItems:"center", gap:3 }}><svg width={13} height={13} viewBox="0 0 24 24" fill="none"><polygon points="12,2 22,7 12,12 2,7" fill="#FFE600" stroke="#C8B400" strokeWidth="1"/><polygon points="2,7 2,17 12,22 12,12" fill="#D4AC00" stroke="#C8B400" strokeWidth="1"/><polygon points="22,7 22,17 12,22 12,12" fill="#FFD000" stroke="#C8B400" strokeWidth="1"/></svg> ×{s.nb_games}</div>
                 <div style={{ color:c, fontWeight:800, fontFamily:"'Syne',sans-serif", fontSize:15, flexShrink:0 }}>{fmtPrice(s.price_ttc)}</div>
+                <div style={{ display:"flex", gap:5, flexShrink:0 }}>
+                  <button onClick={()=>{ setEditSale(s); setEditForm({nb_games:s.nb_games, price_ttc:s.price_ttc, client_name:s.client_name||"", comment:s.comment||""}); }} style={{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:7, padding:"5px 9px", color:T.sub, fontSize:11, cursor:"pointer" }}>✏️</button>
+                  <button onClick={()=>setConfirmDel(s.id)} style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:7, padding:"5px 9px", color:"#EF4444", fontSize:11, cursor:"pointer" }}>🗑</button>
+                </div>
               </div>
             );
           })}
@@ -484,6 +533,15 @@ function SalesView({ offers, seller }) {
   const colorB=CAT_COLORS2[category];
   const filtered=offers.filter(o=>o.category===category&&(!search||o.label.toLowerCase().includes(search.toLowerCase())));
   const counts={ PRO:offers.filter(o=>o.category==="PRO").length, Joueur:offers.filter(o=>o.category==="Joueur").length };
+
+  // Icône boîte 3D jaune
+  const BoxIcon = ({size=18}) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{display:"inline-block",verticalAlign:"middle"}}>
+      <polygon points="12,2 22,7 12,12 2,7" fill="#FFE600" stroke="#C8B400" strokeWidth="1"/>
+      <polygon points="2,7 2,17 12,22 12,12" fill="#D4AC00" stroke="#C8B400" strokeWidth="1"/>
+      <polygon points="22,7 22,17 12,22 12,12" fill="#FFD000" stroke="#C8B400" strokeWidth="1"/>
+    </svg>
+  );
 
   async function presentOffer(offer) {
     setSelected(offer); setSaleId(null); setConfirmed(false); setClientName(""); setComment("");
@@ -533,7 +591,10 @@ function SalesView({ offers, seller }) {
             </div>
             <div style={{ background:"#EDE9FE", border:"1px solid #C4B5FD", borderRadius:10, padding:"9px 14px" }}>
               <div style={{ color:"#7C3AED99", fontSize:10, fontFamily:"'Syne',sans-serif", marginBottom:2 }}>JEUX</div>
-              <div style={{ color:"#7C3AED", fontWeight:900, fontSize:22, fontFamily:"'Syne',sans-serif" }}>{ng}</div>
+              <div style={{ color:"#7C3AED", fontWeight:900, fontSize:22, fontFamily:"'Syne',sans-serif", display:"flex", alignItems:"center", gap:4 }}>
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none"><polygon points="12,2 22,7 12,12 2,7" fill="#FFE600" stroke="#C8B400" strokeWidth="1"/><polygon points="2,7 2,17 12,22 12,12" fill="#D4AC00" stroke="#C8B400" strokeWidth="1"/><polygon points="22,7 22,17 12,22 12,12" fill="#FFD000" stroke="#C8B400" strokeWidth="1"/></svg>
+                {ng}
+              </div>
             </div>
           </div>
           <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"5px 12px", borderRadius:20, background:confirmed?"#D1FAE5":"#FEF9C3", border:`1px solid ${confirmed?"#6EE7B7":"#FDE68A"}`, color:confirmed?"#065F46":"#713F12", fontSize:11, fontWeight:700, fontFamily:"'Syne',sans-serif", marginBottom:16 }}>
@@ -576,7 +637,7 @@ function SalesView({ offers, seller }) {
   return (
     <div style={{ padding:"20px", maxWidth:500, margin:"0 auto" }}>
       <div style={{ display:"flex", gap:10, marginBottom:20 }}>
-        {["PRO","Joueur"].map(cat=>{
+        {["Joueur","PRO"].map(cat=>{
           const c=CAT_COLORS[cat], cb=CAT_COLORS2[cat], active=category===cat;
           return (
             <button key={cat} onClick={()=>{ setCategory(cat); setSearch(""); }} style={{ flex:1, padding:"15px 10px", borderRadius:14, background:active?cb:T.surface, border:`2px solid ${active?c:T.border}`, color:active?c:T.sub, cursor:"pointer", fontFamily:"'Syne',sans-serif", transition:"all 0.2s", textAlign:"center", boxShadow:active?`0 4px 16px ${c}33`:"0 1px 4px rgba(0,0,0,0.05)" }}>
@@ -607,7 +668,7 @@ function SalesView({ offers, seller }) {
                 <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, color:T.text, fontSize:14, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{offer.label}</div>
                 <div style={{ display:"flex", gap:8, marginTop:2 }}>
                   <span style={{ color:T.muted, fontSize:11 }}>{fmtPrice(offer.price_ht)} HT</span>
-                  <span style={{ color:"#7C3AED", fontSize:11 }}>🎮 {ng} jeu{ng>1?"x":""}</span>
+                  <span style={{ color:"#7C3AED", fontSize:11 }}><BoxIcon size={14}/> {ng} jeu{ng>1?"x":""}</span>
                 </div>
               </div>
               <div style={{ textAlign:"right", flexShrink:0 }}>

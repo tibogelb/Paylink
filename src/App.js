@@ -520,7 +520,7 @@ function CopyUrlButton({ url }) {
 
 // ── Sales View ────────────────────────────────────────────────────────────────
 function SalesView({ offers, seller }) {
-  const [category,setCategory]=useState("PRO");
+  const [category,setCategory]=useState("Joueur");
   const [search,setSearch]=useState("");
   const [selected,setSelected]=useState(null);
   const [saleId,setSaleId]=useState(null);

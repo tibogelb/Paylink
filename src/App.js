@@ -18,7 +18,7 @@ const CAT_ICONS   = { PRO:"💼", Joueur:"🎮" };
 const SELLER_COLORS = ["#059669","#EA580C","#7C3AED","#0284C7","#D97706","#DB2777"];
 
 function ttc(ht)  { return Math.round(ht*1.2*100)/100; }
-function fmt(p)   { return Number(p).toFixed(2).replace(".",","+" €").replace("+"," "); }
+
 function fmtDate(d) {
   const dt=new Date(d);
   return dt.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})
@@ -529,8 +529,6 @@ function SalesView({ offers, seller }) {
   const [clientName,setClientName]=useState("");
   const [comment,setComment]=useState("");
 
-  const color=CAT_COLORS[category];
-  const colorB=CAT_COLORS2[category];
   const filtered=offers.filter(o=>o.category===category&&(!search||o.label.toLowerCase().includes(search.toLowerCase())));
   const counts={ PRO:offers.filter(o=>o.category==="PRO").length, Joueur:offers.filter(o=>o.category==="Joueur").length };
 
@@ -656,7 +654,7 @@ function SalesView({ offers, seller }) {
       <div style={{ color:T.muted, fontSize:12, marginBottom:12, fontFamily:"'Syne',sans-serif" }}>{filtered.length} offre{filtered.length>1?"s":""}</div>
       <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
         {filtered.map(offer=>{
-          const c=CAT_COLORS[offer.category], cb=CAT_COLORS2[offer.category], ng=extractNbGames(offer.label);
+          const c=CAT_COLORS[offer.category], ng=extractNbGames(offer.label);
           return (
             <button key={offer.id} onClick={()=>presentOffer(offer)} style={{ background:T.surface, border:`1.5px solid ${T.border}`, borderRadius:12, padding:"15px 17px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:13, outline:"none", width:"100%", transition:"all 0.15s", boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}
               onMouseEnter={e=>{ e.currentTarget.style.borderColor=c; e.currentTarget.style.boxShadow=`0 4px 16px ${c}22`; }}

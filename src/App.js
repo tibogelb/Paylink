@@ -519,7 +519,7 @@ function CopyUrlButton({ url }) {
 }
 
 // ── Sales View ────────────────────────────────────────────────────────────────
-function SalesView({ offers, seller }) {
+function SalesView({ offers, seller, onAdminClick }) {
   const [category,setCategory]=useState("Joueur");
   const [search,setSearch]=useState("");
   const [selected,setSelected]=useState(null);
@@ -529,6 +529,8 @@ function SalesView({ offers, seller }) {
   const [clientName,setClientName]=useState("");
   const [comment,setComment]=useState("");
   const [showLinks,setShowLinks]=useState(false);
+
+  useEffect(()=>{ window.scrollTo(0,0); },[]);
 
   if (showLinks) return <LinksView onBack={()=>setShowLinks(false)}/>;
 
@@ -637,7 +639,10 @@ function SalesView({ offers, seller }) {
   }
 
   return (
-    <div style={{ padding:"20px", maxWidth:500, margin:"0 auto" }}>
+    <div style={{ padding:"16px 20px 80px", maxWidth:500, margin:"0 auto" }}>
+      {!selected && onAdminClick && (
+        <button onClick={onAdminClick} style={{ position:"fixed", bottom:20, right:20, ...btnGhost, fontSize:11, boxShadow:"0 2px 8px rgba(0,0,0,0.1)", zIndex:40 }}>⚙️</button>
+      )}
       <button onClick={()=>setShowLinks(true)} style={{ width:"100%", marginBottom:14, background:T.surface, border:`1.5px solid #C4B5FD`, borderRadius:12, padding:"13px 18px", cursor:"pointer", display:"flex", alignItems:"center", gap:10, fontFamily:"'Syne',sans-serif", boxShadow:"0 2px 8px rgba(124,58,237,0.08)", transition:"all 0.15s" }}
         onMouseEnter={e=>{ e.currentTarget.style.background="#EDE9FE"; }}
         onMouseLeave={e=>{ e.currentTarget.style.background=T.surface; }}>
@@ -812,7 +817,9 @@ function LinksView({ onBack }) {
           </div>
         </div>
       )}
-      <NavBar right={<button onClick={onBack} style={{ ...btnGhost, fontSize:12 }}>← Retour</button>}/>
+      <div style={{ padding:"14px 20px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center" }}>
+        <button onClick={onBack} style={{ ...btnGhost, fontSize:12 }}>← Retour</button>
+      </div>
       <div style={{ padding:"24px 20px", maxWidth:500, margin:"0 auto" }}>
         <div style={{ marginBottom:20 }}>
           <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:22, fontWeight:900, color:T.text, margin:"0 0 4px" }}>🔗 Liens Délires Games</h2>
@@ -1031,8 +1038,7 @@ export default function App() {
           </div>
         }
       />
-      <SalesView offers={offers} seller={seller}/>
-      <button onClick={()=>setView("admin")} style={{ position:"fixed", bottom:20, right:20, ...btnGhost, fontSize:11, boxShadow:"0 2px 8px rgba(0,0,0,0.1)" }}>⚙️</button>
+      <SalesView offers={offers} seller={seller} onAdminClick={()=>setView("admin")}/>
     </div>
   );
 }

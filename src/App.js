@@ -712,7 +712,10 @@ function MolliePayments() {
     try {
       const r=await fetch("/api/mollie");
       const d=await r.json();
-      if (d._embedded&&d._embedded.payments) setPayments(d._embedded.payments.filter(p=>p.status!=="expired").slice(0,10));
+      if (d._embedded&&d._embedded.payments) {
+        const since=new Date(Date.now()-7*24*60*60*1000);
+        setPayments(d._embedded.payments.filter(p=>p.status!=="expired"&&new Date(p.createdAt)>=since).slice(0,10));
+      }
       else setError("Impossible de charger les paiements");
     } catch(e) { setError("Erreur de connexion"); }
     setLoading(false);
@@ -742,7 +745,7 @@ function MolliePayments() {
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
         <div>
           <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:900, fontSize:16, color:T.text }}>💳 Derniers paiements Mollie</div>
-          <div style={{ color:T.muted, fontSize:11, marginTop:2 }}>10 dernières transactions (hors expirées)</div>
+          <div style={{ color:T.muted, fontSize:11, marginTop:2 }}>7 derniers jours (hors expirées)</div>
         </div>
         <button onClick={refresh} style={{ background:refreshed?"#D1FAE5":T.surface, border:`1px solid ${T.border}`, borderRadius:8, padding:"6px 12px", color:refreshed?"#059669":T.sub, fontSize:12, cursor:"pointer", fontFamily:"'Syne',sans-serif", fontWeight:600, transition:"all 0.2s" }}>
           {refreshed?"✓":"↻"} Actualiser
